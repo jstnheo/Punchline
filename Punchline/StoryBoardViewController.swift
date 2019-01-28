@@ -111,12 +111,13 @@ class StoryBoardViewController: UIViewController {
     }
     
     @IBAction func mergeAndSave(_ sender: Any) {
-//        DispatchQueue.main.async {
-//            MBProgressHUD.showSpinner()
-//        }
+        DispatchQueue.main.async {
+            MBProgressHUD.showSpinner()
+        }
 
         
         guard let introAsset = story.intro.asset, let setupAsset = story.setup.asset, let punchlineAsset = story.punchline.asset  else {
+            assert(false, "Missing assets")
             return
         }
         
@@ -125,27 +126,36 @@ class StoryBoardViewController: UIViewController {
         let mixComposition = AVMutableComposition()
         var totalTime = CMTime.zero
         var layerInstructionsArray: [AVVideoCompositionLayerInstruction] = []
-        var videoSize: CGSize = CGSize.zero
+//        var videoSize: CGSize = CGSize.zero
         for videoAsset in videoAssets {
             guard let videoTrack = mixComposition.addMutableTrack(withMediaType: .video, preferredTrackID: Int32(kCMPersistentTrackID_Invalid)) else {
+                assert(false, "Failed to load first track")
                 return
             }
             do {
                 try videoTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: videoAsset.duration), of: videoAsset.tracks(withMediaType: .video)[0], at: totalTime)
             } catch {
-                print("Failed to load first track")
+                assert(false, "Failed to load first track")
                 return
             }
             
-            videoSize = videoTrack.naturalSize
+            guard let audioTrack = mixComposition.addMutableTrack(withMediaType: .audio, preferredTrackID: Int32(kCMPersistentTrackID_Invalid)) else {
+                assert(false, "Failed to load first track")
+                return
+            }
             
-            // https://stackoverflow.com/questions/49297539/merge-videos-array-in-swift
+            do {
+                try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: videoAsset.duration), of: videoAsset.tracks(withMediaType: .audio)[0], at: totalTime)
+            } catch {
+                assert(false, "Failed to load first audio track")
+                return
+            }
             
-            //todo: add audio
+//            videoSize = videoTrack.naturalSize
             
             totalTime = totalTime + videoAsset.duration
          
-            let videoInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack)
+            let videoInstruction = VideoHelper.videoCompositionInstruction(videoTrack, asset: videoAsset)
             if videoAsset != videoAssets.last {
                 videoInstruction.setOpacity(0.0, at: totalTime)
             }
@@ -160,8 +170,15 @@ class StoryBoardViewController: UIViewController {
         let mainComposition = AVMutableVideoComposition()
         mainComposition.instructions = [mainInstruction]
         mainComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
-        mainComposition.renderSize = CGSize(width: videoSize.width, height: videoSize.height)
+        //mainComposition.renderSize = CGSize(width: videoSize.width, height: videoSize.height)
+        mainComposition.renderSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+    
         
+//        videoLayer.frame    = CGRectMake(0, 0, videoSize.height, videoSize.width) //notice the switched width and height
+//            ...
+//            videoComp.renderSize = CGSizeMake(videoSize.height,videoSize.width) //this make the final video in portrait
+//            ...
+//            layerInstruction.setTransform(videoTrack.preferredTransform, atTime: kCMTimeZero) //important piece of information let composition know you want to rotate the original video in output
         
         // 4 - Get path
         guard let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
