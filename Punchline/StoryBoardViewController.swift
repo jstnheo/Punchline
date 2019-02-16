@@ -49,8 +49,8 @@ class StoryBoardViewController: UIViewController {
     func exportDidFinish(_ session: AVAssetExportSession) {
         
         // Cleanup assets
-        MBProgressHUD.hideSpinner()
-        
+        MBProgressHUD.hide(for: view, animated: true)
+
         guard session.status == AVAssetExportSession.Status.completed,
             let outputURL = session.outputURL else {
                 return
@@ -111,10 +111,7 @@ class StoryBoardViewController: UIViewController {
     }
     
     @IBAction func mergeAndSave(_ sender: Any) {
-        DispatchQueue.main.async {
-            MBProgressHUD.showSpinner()
-        }
-
+        MBProgressHUD.showAdded(to: view, animated: true)
         
         guard let introAsset = story.intro.asset, let setupAsset = story.setup.asset, let punchlineAsset = story.punchline.asset  else {
             assert(false, "Missing assets")
@@ -126,7 +123,6 @@ class StoryBoardViewController: UIViewController {
         let mixComposition = AVMutableComposition()
         var totalTime = CMTime.zero
         var layerInstructionsArray: [AVVideoCompositionLayerInstruction] = []
-//        var videoSize: CGSize = CGSize.zero
         for videoAsset in videoAssets {
             guard let videoTrack = mixComposition.addMutableTrack(withMediaType: .video, preferredTrackID: Int32(kCMPersistentTrackID_Invalid)) else {
                 assert(false, "Failed to load first track")
@@ -151,8 +147,6 @@ class StoryBoardViewController: UIViewController {
                 return
             }
             
-//            videoSize = videoTrack.naturalSize
-            
             totalTime = totalTime + videoAsset.duration
          
             let videoInstruction = VideoHelper.videoCompositionInstruction(videoTrack, asset: videoAsset)
@@ -170,15 +164,8 @@ class StoryBoardViewController: UIViewController {
         let mainComposition = AVMutableVideoComposition()
         mainComposition.instructions = [mainInstruction]
         mainComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
-        //mainComposition.renderSize = CGSize(width: videoSize.width, height: videoSize.height)
-        mainComposition.renderSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-    
+        mainComposition.renderSize = CGSize(width: view.bounds.size.width, height: view.bounds.size.height + 100)
         
-//        videoLayer.frame    = CGRectMake(0, 0, videoSize.height, videoSize.width) //notice the switched width and height
-//            ...
-//            videoComp.renderSize = CGSizeMake(videoSize.height,videoSize.width) //this make the final video in portrait
-//            ...
-//            layerInstruction.setTransform(videoTrack.preferredTransform, atTime: kCMTimeZero) //important piece of information let composition know you want to rotate the original video in output
         
         // 4 - Get path
         guard let documentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
