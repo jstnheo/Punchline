@@ -164,7 +164,7 @@ class StoryBoardViewController: UIViewController {
         let mainComposition = AVMutableVideoComposition()
         mainComposition.instructions = [mainInstruction]
         mainComposition.frameDuration = CMTimeMake(value: 1, timescale: 30)
-        mainComposition.renderSize = CGSize(width: view.bounds.size.width, height: view.bounds.size.height + 100)
+        mainComposition.renderSize = CGSize(width: view.bounds.size.width, height: view.bounds.size.height)
         
         
         // 4 - Get path
